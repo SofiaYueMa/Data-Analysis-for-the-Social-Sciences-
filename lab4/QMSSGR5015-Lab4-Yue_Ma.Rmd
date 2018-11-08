@@ -1,0 +1,87 @@
+---
+title: "QMSSGR5015-Lab4-Yue_Ma"
+author: "Yue Ma"
+date: "10/24/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(plyr)
+setwd("/Users/mayue/Desktop/qmss/data analysis/lab4")
+w = read.csv("WVS.csv")
+w = rename(w, c("V70" = "creation"))
+table(w$creation)
+w = rename(w, c("V71" = "money"))
+table(w$money)
+w = rename(w, c("V242" = "age"))
+w = rename(w, c("V2" = "country"))
+```
+
+The variable "V70" is related to respondents' attitude on creation of their life. The question asks the respondents if it is important to this person to think up new ideas and be creative; to do things one's own way. 1 is "Very much like me", and 6 is "Not at all like me".
+The variable "V71" is related to respondents' attitude on money of their life. The question asks the respondents if it is important to this person to be rich; to have a lot of money and expensive things. 1 is "Very much like me", and 6 is "Not at all like me". 
+The tables above show the summary results of the answers.
+
+
+##1. Run a simple regression, and interpret your results.  (Did the results fit your expectations?  Why?  Why not?)  
+
+```{r}
+lm1 = lm(creation ~ age + as.factor(country), data = w, subset = (country == 276 | country == 392))
+summary(lm1)
+
+lm2 = lm(money ~ age + as.factor(country), data = w, subset = (country == 276 | country == 392))
+summary(lm2)
+
+w = rename(w, c("V10" = "happy"))
+
+lm3 = lm(money ~ age + as.factor(country) + happy, data = w, subset = (country == 276 | country == 392))
+summary(lm3)
+```
+Firstly, I want to take a look at the question that if one's age and country (Germany vs. Japan) affect his or her attitude on creation of life. From the results, we can see that the p-value is < 2.2e-16, so it is statitically significally. And the estimate of “age” is 0.008225. It indicates that for every age increasing, a person believes it is 0.008 less important to think up new ideas and be creative; to do things one's own way. The estimate of “country” is 0.775238. It indicates that Japanese respondents will think creation 0.78 unit less important than German respondents. The results fit my expectation, because people are always more creative during their young ages and become more mature with age increasing. Also, due to different culture, western education system pay more attention to creation development on average.
+
+Then, I want to take a look at the question that if one's age and country (Germany vs. Japan) affect his or her attitude on money of life. From the results, we can see that the p-value is < 2.2e-16, so it is statitically significally. And the estimate of “age” is 0.013967. It indicates that for every age increasing, a person believes it is 0.001 less important to be rich; to have a lot of money and expensive things. The estimate of “country” is 0.979379. It indicates that Japanese respondents will think money 0.98 unit less important than German respondents. The results fit my expectation as well, because people get more life experience with age increasing and realize that there are many other things that are more important than money in life. In this question, respondents from Japan and Germany have similar answers.
+
+Perhaps people who think money less important are just more happy and optimistic, so I add variable "V10" of happiness level as well. "V10" is the question that taking things all together, would you say you are: where 1 is "Very happy", and 4 is "Not at all happy". From the results, we can see that p-value of variable "happy" is 0.112, which is more than 0.05, so it is not statistically significant. As a result, the happiness and optimism level does not affect people's attitude on money so much.
+
+##2. Add an interaction term to that model that you think might moderate the original relationship between X1 and X2.  Explain why you think an interaction might be present and in what direction it would work.  Explain your results.  Did it work out?  Yes?  No?  
+
+```{r}
+lm4 = lm(money ~ age*as.factor(country) + happy, data = w, subset = (country == 276 | country == 392))
+summary(lm4)
+
+anova(lm3, lm4) 
+
+lm5 = lm(money ~ age + I(age^2) + as.factor(country) + happy, data = w, subset = (country == 276 | country == 392))
+summary(lm5)
+
+w2 <- subset(w, country == 276 | country == 392) ## subset the data to use in visreg below ##
+
+library(visreg)
+visreg(lm(money ~ age*as.factor(country) + happy, data = w2),
+       xvar = "age", by = "country", overlay = T, partial = F, band = F, legend = F, 
+       line = list(col = c("cyan3", "purple3"))) 
+legend("bottomleft", c("Germany", "Japan"), lwd = 2, col = c("cyan3", "purple3"), cex = 0.8)
+```
+
+Firstly, I add an interaction term to that model that I think might moderate the original relationship to see if age and country may interact to predict the attitude on money in life. From the results, we can see that net of other factors, Japanese respondents gain back -0.014380 when they get age increasing. When the respondent is from Germany(country == 276), they will think 0.021 less important on money as the age increases. So when it gains back -0.014380, Japanese respendents ultimately will think 0.00662 (0.021-0.014380) less important on money as the age increases.
+
+Then I see if adding the interaction improves my model. From the results, we can see that the probability is 2.872e-12 and less than 0.001, which indicates that it is statistically significant. As a result, I think that it is better to add the interaction, thus improving my model.
+
+Next, I include a quadratic on age. From the results, the estimate of age square is -1.953e-04. It indicates that net of other factors, with age increases, at first, people think money less and less important, but then at a certain point, for each age point squared, people think money more and more important. The results did not reach my expectation. Meantime, it reduces the adjuste R-squared, so I do not think that adding the quadratic on age can improve my model.
+
+Finally, I display the results of the fitted model with interaction term but without quadratic term. The results showed in the plot reaches my expectation and fits the analysis above. Net of other factors, people think money on life less important as the age increases and age affect more on German than on Japanese.
+
+
+##3. Give me an update on your independent project.  What do you plan to investigate?  What are your hypotheses?  What data are you using?  How can we help? 
+
+My project question is "What are the effects of pay gap between the executive and employees of listed companies on corporate performance?" I successfully searched a dataset related to Chinese listed companies in CSMAR database and it has the R-readable format. The CSMAR is China Stock Market Financial Statements Database, it contains a list of
+all financial indicators of listed companies in China I need, including EBIT, ROTA, Total Net Assets, etc. On the Office for National Statistics (http://www.ons.gov.uk), I also got some related datasets, however, it needs more clean manipulation. I will continue to search related dataset of listed companies in the United States through Bloomberg. Then, I will narrow my research topic to a specific region.
+
+My hypotheses are as below:
+Hypothesis 1: There is an "inverted U-shaped" curve relationship between the pay gap between executives and general staff of listed companies in China and corporation performance.
+Hypothesis 2: The "inverted U-shaped" curve relationship exists in different countries and regions with different inflection points.
