@@ -1,0 +1,177 @@
+---
+title: "QMSSGR5015- Lab 2- Yue Ma"
+author: "Yue Ma"
+date: "2018/9/29"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("/Users/mayue/Desktop/qmss/data analysis/lab 2")
+d = read.csv("GSS.2006.csv")
+```
+
+## 1. Recode 1 *sort of* continuous variable into categories. Tell what you did and explain the variable(s).
+
+## A. The simplest way to make a dummy variable:
+
+It is binary recode, where we make it 1 if "How old were you when your first child was born?" is age as old as 35 or more, 0 otherwise. People who are pregnant or have first child at age 35 or older are often referred to as "advanced maternal age". From the results, I can find that most people have their first child under advanced maternal age.
+
+```{r}
+d$hi.agekdbrn = ifelse((d$agekdbrn>34), 1, 0)
+table(d$hi.agekdbrn, d$agekdbrn)
+```
+
+## B. Breaking a variable into categories:
+
+To create a number of categories for first maternal age, people who have first child at age 35 or less are often reffered to as "young maternal age", people who have first child at age between 18 and 35 are often seen as normal maternal age, those who have first child at age 35 or older are often referred to as "advanced maternal age". For the results, I can conclude that most people have their first child at normal maternal age.
+
+```{r}
+d$agekdbrn.cat = cut(d$agekdbrn, breaks = c(1, 18, 34, 98), label=c("young maternal age", "normal maternal age", "advanced maternal age"), ordered=TRUE)
+table(d$agekdbrn.cat, d$agekdbrn)
+```
+
+## C. Coding multiple conditions:
+
+It is a table with multiple conditions at once, both female and currently married. 
+
+```{r}
+d$bothftw = ifelse((d$marital==1 & d$sex==2), 1, 0) 
+table(d$bothftw, d$marital, d$sex)
+```
+
+## D. Another way to apply multiple labels. It is consistent with the original.
+
+```{r}
+d$sex[d$marital==1] <- 0
+d$sex[d$marital==2] <- 1
+d$sex[d$marital==3] <- 1
+d$sex[d$marital==4] <- 1
+d$sex[d$marital==5] <- 1
+table(d$sex, d$marital)
+```
+
+## E. Changing to missing values 
+
+The answers to "Were both your parents born in this country??" and 7="Neither born in U.S.", so I want to make that a missing answer. 
+
+```{r}
+d$parborn.new = d$parborn
+d$parborn.new[d$parborn==8] <- NA
+
+table(d$parborn, d$parborn.new)
+```
+
+## 2. Recode 1 other variable and attach value labels. Tell what you did and explain the variable(s).
+
+## A. Add labels to existing variables:
+
+The results show that most people have their first baby in non-advanced maternal age.
+
+```{r}
+d$hi.agekdbrn.lab <- ordered(d$hi.agekdbrn, levels = c(0,1), labels = c("non-advanced maternal age", "advanced maternal age")) 
+table(d$hi.agekdbrn.lab, d$hi.agekdbrn)
+```
+
+## B. Reverse code a variable and then add labels and make it ordered:
+
+The variable "natenvir" indicates the fact that how much time the respondents spend on improving and protecting the enviroment. 
+(too much, too little or about the right amount time.)
+
+I reverse code firstm, make the numeric variable into a factor, make the factor variable into an ORDERED factor with value labels, and get the mean.
+
+```{r}
+d$rnatenvir = 4-d$natenvir 
+
+d$rnatenvir.fact = as.factor(d$rnatenvir) 
+
+d$lab.rnatenvir <- ordered(d$rnatenvir, levels = c(1,2,3), labels = c("too much", "all-right", "too little")) 
+
+table(d$lab.rnatenvir, d$rnatenvir)
+
+mean(d$natenvir, na.rm=T) 
+
+mean(as.numeric(d$lab.rnatenvir), na.rm=T) 
+```
+
+
+## 3. Use one (or both) of your recoded variables to do a cross-tabulation (like last week, with prop.table, doBy, or ddply). Explain your results.
+
+The variable "agekdbrn" indicates the age people have thier first baby.
+
+The variable "childs" indicates the how many children have you ever had. People who have less than 3 children are coded 1, otherwise 0.
+
+The results indicate that there is no obivious relation between the number of childs people have and the age that they have their first baby.
+
+```{r}
+library(gmodels)
+d$hi.agekdbrn = ifelse((d$agekdbrn>34), 1, 0)
+d$hi.childs = ifelse((d$childs<3), 1, 0) 
+CrossTable(d$hi.agekdbrn, d$hi.childs, prop.r=F, prop.c=T, prop.t=F, prop.chisq=F, format="SPSS")  
+```
+
+
+## 4. Run a linear regression with 1 independent and 1 dependent variable; make all of the recodes necessary to make the model as easy to interpret as possible; and explain the results.
+
+The variable "sibs" is about the question - How many brothers and sisters did you have?
+
+The variable "childs" is about the question - How many children have you ever had? 
+
+From the description results, we can see that the average number of brothers and sisters people have is about 4, and the average number of the children people have is about 2.
+
+I use a linear regression to see the relationship bewteen the number of one's sibling and children. From the results, a coefficient of 0.43514 indicates there is a positive correlation between the number of one's sibling and the number of one's children.
+
+```{r}
+library(psych)
+describe(d$sibs)
+describe(d$childs) 
+lm1 = lm(sibs ~ childs, data=d) 
+summary(lm1) ## examine the results: a coefficient of 0.04662 indicates no obvious relationship between my hours and my spouse's hours ##
+```
+
+## 5. Plot two variables, either as a scatter plot or boxplot; add in trend/regression lines; and explain your results.
+
+From the plot, there is a positive correlation between the number of one's sibling and the number of one's children.
+```{r}
+plot(d$sibs, d$childs, main="Relationship bewteen the number of one's sibling and children", 
+     xlab="Number of sibling", ylab="Number of children", pch=19) 
+
+abline(lm(sibs ~ childs, data=d), col="blue") ## add in a regression line ##
+```
+
+## -- or (for a boxplot) ---
+
+```{r}
+plot(d$sibs, d$childs, main="Relationship bewteen the number of one's sibling and children", 
+     xlab="Number of sibling", ylab="Number of children", pch=19) 
+
+plot(as.factor(d$sibs), d$childs, main="Relationship bewteen the number of one's sibling and children", 
+     xlab="Number of sibling", ylab="Number of children", pch=19) ## this creates a box plot ##
+
+mean(d[d$sibs == 1, 'childs'], na.rm=T)
+describe(d[d$sibs == 1, 'childs']) ## respondent's work hours ##
+```
+
+## ----- other useful graphing codes ----
+
+```{r}
+hist(d$sibs) ## draws a histogram ##
+
+dense <- density(d$sibs, na.rm=T) # returns the density data 
+plot(dense) # plots the results as a kernel density plot
+
+library(ggplot2)
+ggplot(d, aes(x=d$sibs, y=d$childs)) + ## Another scatter plot
+  geom_point(shape=1)      +    # Use hollow circles
+  geom_smooth(method=lm)   # Add linear regression line
+```
+
+## 6. Tell me two theories/ideas you might want to test in this course. Do you have a dataset for these ideas/theories already? Do you have it in R-readable format already? What is your main independent variable? What is your main dependent variable?  Send me an email with the subject "Independent Project Ideas - [your name]" to gme2101@columbia.edu
+
+See the email please, thank you. 
+
