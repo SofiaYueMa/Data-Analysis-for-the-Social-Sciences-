@@ -1,0 +1,125 @@
+---
+title: "QMSSGR5015- Lab 1- Yue Ma"
+author: "Yue Ma"
+date: "2018/9/25"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Lab 1 
+
+due on Sept 26th based on data from here:
+http://www.thearda.com/Archive/Files/Codebooks/GSS2006_CB.asp
+
+
+```{r}
+setwd("/Users/mayue/Desktop/qmss/data analysis/lab 1")
+gss = read.csv("GSS.2006.csv.xls")
+names(gss)
+```
+
+##1-  Use the table command, summary or describe commands, to tabulate one variable; and explain your results.
+
+I chose the variable, *satjob1*. It indicates the respondent's level of satification to their current jobs. The details are as below:
+
+```{r table 1}
+table(gss$satjob1)  
+```
+It tabulates "All in all, how satisfied would you say you are with your job?"
+From the description of variable *SATJOB1* at www.thearda.com, valid answers range from 1 to 5, where 1 = Very satisfied, 2 = Somewhat satisfied, 3 = Not too satisfied, and 4 = Not at all satisfied; there are 786 1's and 55 4's.
+
+
+```{r table 2}
+summary(gss$satjob1) 
+```
+I calculate this variable on a 1-4 scale; not as helpful.
+
+
+```{r table 3}
+options(digits=2) 
+prop.table(table(gss$satjob1)) 
+```
+This gives us the proportions for this variable. Seeing this as a proportion helps a bit: less than half of Ameircans (45.7%) give strong positive feedback on their current jobs, others do not. Approximately 44.7% are somewhat satisfied with their jobs, which means there are some factors in thier jobs that do not meet their satisfaction and can be improved.
+
+
+```{r installation}
+library(psych) 
+```
+
+```{r table 5}
+describe(gss$haveinfo) 
+```
+This summarizes if one has enough information to get the job done.
+
+
+```{r table 6}
+table(gss$haveinfo)    
+```
+The result is better to make some analysis: a table of categories: we see that 941 people have enough information to get the job done, however, 761 people do not have enough information to finish the work, which may be one of the factors that make them dissatisfied with their jobs.
+
+
+``````{r table 7}
+describe(gss$moredays)
+options(digits=2) 
+prop.table(table(gss$moredays))
+```
+This works better for a numeric variable *moredays* indicates that "How many days per month do you work extra hours beyond your usual schedule?". The mean is 6.1. And the proportions indicate that more people take work extra hours less than 10 days per month.
+
+
+## 2. Using either the plyr or doBy commands, compare the means and standard deviations for one variable, for at least two sub-groups; and explain your results. 
+
+``````{r installation etc}
+library(plyr)
+```
+
+``````{r tabulations 1}
+ddply(gss, "satjob1", summarise, Mean = mean(moredays, na.rm = T), SD = sd(moredays, na.rm = T))
+```
+
+ddply's results show that people who are very satisfied with their jobs work most extra days per day - 6.9 days, while those who are not at all satisfied with their jobs work extra 3 days per month. This makes sense because people are likely to contribute more to work if they can get more happiness and achievement during the jobs.
+
+
+``````{r installations 2}
+library(doBy)
+```
+
+``````{r tabulations 2}
+summaryBy(moredays~satjob1, data=gss, FUN=c(mean, sd), na.rm=T) 
+```
+Another way to do the same analysis as above. 
+
+
+```{r boxplot, echo=TRUE}
+boxplot(moredays~satjob1, data=gss) 
+```
+It graphically displays the relationship in boxplot form.
+
+
+``````{r installations again}
+library(ggplot2)
+```
+
+```{r ggboxplot, echo=TRUE}
+p = ggplot(gss, aes(factor(satjob1), moredays))
+p + geom_boxplot() + geom_jitter()
+p + geom_boxplot(aes(fill = factor(satjob1)))
+```
+
+
+##3. Using the gmodels or another command, cross-tabulate two categorical or ordinal variables (getting proportions); and explain your results.
+
+``````{r installs}
+library(gmodels)
+```
+
+```{r final tabulation}
+CrossTable(gss$satjob1, gss$haveinfo, prop.r=F, prop.c=T, prop.t=F, prop.chisq=F, format="SPSS") #
+```
+This generates the relationship between the information people can get to finish work and their satisfication of the job.
+
+People get enough information to finish work experience 58% always satisfied, this make sense. However, it is interesting that people with least information to get work done experience 55% somewhat satisfied. Maybe they get their satisfication from other factors in their job, for instance, the relationship with their colleagues. I look forward to more research on the facotrs that contribute to the satisfication of jobs. 
