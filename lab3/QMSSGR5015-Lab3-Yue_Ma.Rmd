@@ -1,0 +1,104 @@
+---
+title: "QMSSGR5015-Lab3-Yue_Ma"
+author: "Yue Ma"
+date: "2018/10/10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1. Run a simple bivariate regression, and interpret your results.  (Did the results fit your expectations?  Why?  Why not?)  
+```{r}
+setwd("/Users/mayue/Desktop/qmss/data analysis/lab3")
+g = read.csv("GSS.2006.csv")
+g$realrinc1000s = (g$realrinc)/1000 
+plot(as.factor(g$rimpskls), g$realrinc1000s) 
+lm1 = lm(rimpskls ~ realrinc1000s , data = g, subset = !is.na(big5a2))
+summary(lm1)
+```
+## The variable "realrinc" indicates the income of the respondents. I turn income into 1000s of dollars for ease of interpretation.  The variable "rimpskls" asked "Do you agree or disagree with the statment that your job gives you a chance to improve your skills?" with 1 strongly agree and 5 strongly disagree.
+
+## From the results, we can see that the estimate of "realrinc1000s" is -0.005272. It indicates that for every 1000 dollars more, a person believes it is 0.005 points less to improve their own skills in the job on average. The result fits my expectation, because more income means highr position or more qualified. As the position goes higher, people get less space for improvement. Instead, on some basic levels, especially entry level, people need to learn more to get familiar to the industries and the market, so they may get more chances to improve their skills.
+
+# 2. Add an additional variable that might mediate or partly "explain" the initial association from that simple regression above -- and explain your results.  Did it work out?  Yes?  No? 
+
+## Perhaps people who make more money are just more outgoing and sociable, so I looked at big5a2, To what extent do you agree or disagree with the following statements? I see myself as someone who is outgoing, sociable with 1 strongly agree and 5 strongly disagree. The lower the score, the more outgoing and sociable people are.
+
+```{r}
+plot(as.factor(g$big5a2), g$realrinc1000s)
+
+lm2 = lm(rimpskls ~ realrinc1000s + big5a2, data = g)
+summary(lm2)
+```
+
+```{r}
+library(stargazer)
+stargazer(lm1, lm2, type = "text")
+```
+
+## From the results above, we can get the following conculsions.
+
+## Net of how much money someone makes, for each category more outgoing and sociable they feel, they are 0.148 points more to improve their own skills in the job on average. But I can see that the two estimates of variable "realrinc1000s" before and after adding the variable "big5a2" are both -0.005. As a result, this second variable hardly changes the income variable, so it is not mediating the effect really.
+
+# 3. Run another multiple regression.  Tell me how you expect your dependent variable to be affected by the independent variables.  Interpret your results.
+
+```{r}
+library(plyr)
+setwd("/Users/mayue/Desktop/qmss/data analysis/lab3")
+d = read.csv("WVS.csv")
+
+d = rename(d, c("V8" = "work"))
+d$rwork = 4 - d$work
+d$rwork.lab <- ordered(d$rwork, levels = c(1,2,3,4), labels = c("not at all important", "2", "3", "very important"))
+table(d$rwork.lab)
+
+d = rename(d, c("V239" = "income"))
+d$married = ifelse(d$V57 == 1, 1,0)
+d$female = ifelse(d$V240 == 2, 1, 0)
+d = rename(d, c("V242" = "age"))
+lm3 = lm(as.numeric(rwork.lab) ~ income + age + female, d, subset = V2 == 840 & !is.na(married))
+lm4 = lm(as.numeric(rwork.lab) ~ income + age + female, d, subset = V2 == 156 & !is.na(married))
+summary(lm3)
+summary(lm4)
+```
+
+## The varialbe "V8" is renamed as "work", which indicates how important the work is in your life. The variable "V239" is renamed as "income", which asks where you place yourself in the income distribution in your country. Here is a regression predicting if you think your work is important in your life as a fucntion of income, sex and ages. I also did thsi for the United States and China separately and only if people also answered about the whant job indusry they are in. 
+
+## From the resuts above, we can draw several conclusions.
+
+## For the United States, the estimate of "income" is -0.0128126, which indicates that for each step higher of people's income, they think 0.013 points less importance of their work in their life. THe estimate of "age" is -0.0044753, which indicates that for each higer age people is, they think 0.004 points less importance of their work in their life. 
+
+## For China, the relationship trend is similar, but the results are different. The estimate of "income" is -0.0006624, much smaller, which indicates that for each step higher of people's income, they think 0.0007 points less importance of their work in their life. The estimate of "age" is -0.0115172, which indicates that for each higer age people is, they think 0.0115 points less importance of their work in their life.
+
+## Compared the results in two countries, we can see that the impact of income on people's attitude of work in United States is much larger than in that in China. However, the impact of age is opposite, much larger in China. I assume that this difference is somewhat caused by the diffenrence of labor market regulation and culture in these two countries.
+
+# 4. Now add another independent variable to that model in Question 3, preferably a set of dummy variables. Tell me why you added that new set of variables and what effect you expected them to have.  Did they have an effect?  Interpret that new model.
+
+```{r}
+lm5 = lm(as.numeric(rwork.lab) ~ income + age + female + married, d, subset = V2 == 840)
+summary(lm5)
+lm6 = lm(as.numeric(rwork.lab) ~ income + age + female + married, d, subset = V2 == 156)
+summary(lm6)
+```
+
+## We have added in marital status. As we know, marital status may change people's attitude on the work and make them keep a balance between their work and family in their life. So I want to figure out if marital status can make a difference on the analysis results. I expect that for married people, the impact of income and age on their attitude towards work is less.
+
+## From the results, we can see that  for the United States, the estimate of "income" is -0.0100071, which indicates that for each step higher of people's income, they think 0.010 points less importance of their work in their life. The estimate of "age" is -0.0040762, which indicates that for each higer age people is, they think 0.004 points less importance of their work in their life. 
+
+## For China, the relationship trend is similar, but the results are different. The estimate of "income" is -0.001165, much smaller, which indicates that for each step higher of people's income, they think 0.0012 points less importance of their work in their life. The estimate of "age" is -0.011792, which indicates that for each higer age people is, they think 0.0118 points less importance of their work in their life.
+
+# 5. Now run a partial F test comparing the model in Question 3 to the model in Question 4.  Does the F test support the idea of adding those new variables?  Why?  Why not? 
+
+```{r}
+anova(lm3, lm5)
+anova(lm4, lm6)
+```
+
+## The Probability is 0.08002 > 0.05, and 0.4157 > 0.05, which indicates that we cannot conclude that a significant difference exists. However, I prefer to say that 0.08 is close to 0.05, so it is at the margin of statistical significance. The results somewhat support the idea of adding the variable of marital status.  
+
+## The effect in the United States is for my expectation, however, the effect in China is against my expectation. The reason is likely that the traditional views on marriage and family in China gives them more life pressure and make them think more importance of work in their life. Also, the existing social security system in China makes people rely more on their job salary.
